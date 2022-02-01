@@ -243,7 +243,7 @@ resource "aws_ecs_service" "fargate" {
     for_each = local.nat_enabled ? [] : [1]
 
     content {
-      target_group_arn = aws_alb_target_group.fargate.id
+      target_group_arn = aws_alb_target_group.fargate[0].id # nb, Count will be 0 if ALB used instead of NAT
       container_name   = "${var.env_name}-${var.app_name}"
       container_port   = var.container_port
     }
