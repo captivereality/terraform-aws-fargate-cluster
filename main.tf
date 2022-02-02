@@ -197,7 +197,7 @@ resource "aws_alb_listener" "fargate_https" {
   port              = "443"
   protocol          = "HTTPS"
   certificate_arn   = var.cert_arn
-  
+
   default_action {
     target_group_arn = aws_alb_target_group.fargate[count.index].id
     type             = "forward"
@@ -256,7 +256,8 @@ resource "aws_ecs_service" "fargate" {
   depends_on = [
     aws_ecs_task_definition.fargate,
     aws_cloudwatch_log_group.fargate,
-    aws_alb_listener.fargate,
+    aws_alb_listener.fargate_http,
+    aws_alb_listener.fargate_https,
     aws_alb_target_group.fargate,
     aws_alb.fargate
   ]
