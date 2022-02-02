@@ -1,3 +1,7 @@
+# ---------------------------------------------------------
+# -- Module Variables
+# ---------------------------------------------------------
+
 variable "region" {
   type        = string
   description = "AWS region resources will be deployed in."
@@ -56,6 +60,12 @@ variable "cidr_bit_offset" {
 variable "container_port" {
   type        = number
   description = "Container port for the container"
+}
+
+variable "container_protocol" {
+  type        = string
+  description = "Container port for the container"
+  default     = "tcp"
 }
 
 variable "https_enabled" {

@@ -3,6 +3,5 @@ terraform {
 }
 
 provider "aws" {
-  # version = ">= 3.0" # Removed to suppress the " Version constraints inside provider configuration blocks are deprecated" warning
   region  = var.region
 }

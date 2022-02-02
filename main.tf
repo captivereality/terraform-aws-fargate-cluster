@@ -1,14 +1,39 @@
+ 
+# -----------------------------------------------------------
+# -- AWS Fargate Module for Terraform
+# --
+# -- Terraform module that creates a fargate cluster and
+# -- associated resources.
+# -- ECS Cluster
+# -- ECS Task defintion
+# -- Cloudwatch logs
+# -- IAM Permissions to:
+# -- Log to Cloudwatch logs/S3
+# -- Assume its own role
+# -- ALB Load Balancer or NAT Gateway
+# -- Public subnet for load balancer
+# -- Private subnet for ECS Cluster (only acessible via lb)
+# --
+# -- Original Src: 
+# -- https://github.com/PackagePortal/terraform-aws-fargate-cluster
+# -----------------------------------------------------------
+
+# ---------------------------------------------------------
+# -- Local Variables
+# ---------------------------------------------------------
+
 locals {
   ecs_container_definitions = [
     {
-      image       = var.image_name
       name        = "${var.env_name}-${var.app_name}",
+      image       = var.image_name
       networkMode = "awcvpc",
 
       portMappings = [
         {
           containerPort = var.container_port,
-          hostPort      = var.container_port
+          hostPort      = var.container_port,
+          protocol      = var.container_protocol
         }
       ]
 
@@ -37,9 +62,9 @@ data "aws_vpc" "vpc" {
   id = var.vpc_id
 }
 
-##############################
-# Network Interfaces
-##############################
+# ---------------------------------------------------------
+# -- Network Interfaces
+# ---------------------------------------------------------
 
 # Security group for public subnet holding load balancer
 resource "aws_security_group" "alb" {
@@ -125,9 +150,9 @@ resource "aws_security_group" "fargate_ecs" {
   }
 }
 
-##############################
-# Load Balancer
-##############################
+# ---------------------------------------------------------
+# -- Load Balancer
+# ---------------------------------------------------------
 
 resource "aws_alb" "fargate" {
   count           = local.nat_enabled ? 0 : 1
@@ -153,12 +178,12 @@ resource "aws_alb_target_group" "fargate" {
   target_type = "ip"
 }
 
-resource "aws_alb_listener" "fargate" {
+resource "aws_alb_listener" "fargate_http" {
   count             = local.nat_enabled ? 0 : 1
   load_balancer_arn = aws_alb.fargate[count.index].id
-  port              = local.https ? "443" : "80"
-  protocol          = local.https ? "HTTPS" : "HTTP"
-  certificate_arn   = local.https ? var.cert_arn : ""
+  port              = "80"
+  protocol          = "HTTP"
+  certificate_arn   = ""
 
   default_action {
     target_group_arn = aws_alb_target_group.fargate[count.index].id
@@ -166,9 +191,22 @@ resource "aws_alb_listener" "fargate" {
   }
 }
 
-##############################
-# NAT Gateway
-##############################
+resource "aws_alb_listener" "fargate_https" {
+  count             = local.nat_enabled ? 0 : local.https ? 0 : 1 # Only enable if not NAT and SSL enabled
+  load_balancer_arn = aws_alb.fargate[count.index].id
+  port              = "443"
+  protocol          = "HTTPS"
+  certificate_arn   = var.cert_arn
+  
+  default_action {
+    target_group_arn = aws_alb_target_group.fargate[count.index].id
+    type             = "forward"
+  }
+}
+
+# ---------------------------------------------------------
+# -- NAT Gateway (Optional)
+# ---------------------------------------------------------
 
 resource "aws_eip" "ip" {
   count = local.nat_enabled ? var.az_count : 0
@@ -189,9 +227,10 @@ resource "aws_nat_gateway" "gw" {
   }
 }
 
-##############################
-# ECS
-##############################
+# ---------------------------------------------------------
+# -- Elastic Container Service (ECS)
+# ---------------------------------------------------------
+
 resource "aws_ecs_task_definition" "fargate" {
   family                   = var.task_group_family
   network_mode             = "awsvpc"
@@ -243,7 +282,7 @@ resource "aws_ecs_service" "fargate" {
     for_each = local.nat_enabled ? [] : [1]
 
     content {
-      target_group_arn = aws_alb_target_group.fargate[0].id # nb, Count will be 0 if ALB used instead of NAT
+      target_group_arn = aws_alb_target_group.fargate[0].id # nb, Count will always be 0 if ALB used instead of NAT
       container_name   = "${var.env_name}-${var.app_name}"
       container_port   = var.container_port
     }

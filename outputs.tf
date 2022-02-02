@@ -1,3 +1,7 @@
+# ---------------------------------------------------------
+# -- Module Outputs
+# ---------------------------------------------------------
+
 output "private_subnets" {
   description = "List of private subnets (on the ECS service hosting fargate)."
   value       = aws_subnet.fargate_ecs
