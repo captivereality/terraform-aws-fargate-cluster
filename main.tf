@@ -192,7 +192,7 @@ resource "aws_alb_listener" "fargate_http" {
 }
 
 resource "aws_alb_listener" "fargate_https" {
-  count             = local.nat_enabled ? 0 : local.https ? 0 : 1 # Only enable if not NAT and SSL enabled
+  count             = local.nat_enabled ? 0 : local.https ? 1 : 0 # Only enable if not NAT and SSL enabled
   load_balancer_arn = aws_alb.fargate[count.index].id
   port              = "443"
   protocol          = "HTTPS"
