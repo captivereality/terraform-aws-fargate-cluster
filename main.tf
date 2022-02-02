@@ -93,7 +93,7 @@ resource "aws_security_group_rule" "tcp_443" {
 
 
 resource "aws_security_group_rule" "tcp_80" {
-  count = local.https ? 0 : 1
+  # count = local.https ? 0 : 1 # Uncomment this line to not allow TCP80 if SSL enabled
 
   type              = "ingress"
   from_port         = 80
