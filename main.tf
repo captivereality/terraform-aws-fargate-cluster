@@ -69,7 +69,7 @@ data "aws_vpc" "vpc" {
 # Security group for public subnet holding load balancer
 resource "aws_security_group" "alb" {
   name        = "${var.env_name}-${var.app_name}-alb"
-  description = "Allow access on port 443 only to ALB"
+  description = "Allow access on port 80/443 only to ALB"
   vpc_id      = data.aws_vpc.vpc.id
 
   egress {
