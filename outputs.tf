@@ -41,3 +41,8 @@ output "task_definition" {
   description = "Task Defintion"
   value       = aws_ecs_task_definition.fargate
 }
+
+output "cluster_dns_name" {
+  description = "The DNS Name of the Load Balancer"
+  value       = aws_alb.fargate[0].dns_name
+}
